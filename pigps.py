@@ -175,6 +175,7 @@ try:
     modes = pygame.display.list_modes(16)
     screen = pygame.display.set_mode(modes[0], FULLSCREEN, 16)
 except Exception, e:
+    print e
     screen = pygame.display.set_mode((320, 240), pygame.NOFRAME)
 
 screen.fill(0)

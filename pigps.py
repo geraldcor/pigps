@@ -3,6 +3,9 @@ import threading
 import signal
 import sys
 import time
+import fnmatch
+import io
+import os
 
 from pygame.locals import *
 from subprocess import call  
@@ -142,22 +145,102 @@ class Button:
 
 # Globals ---------------------------
 should_listen = False
-screenMode = 0
+global screenMode
+iconPath = 'img'
 icons = []
 plot_points = []
+track_hash = '';
+
+def set_screenMode(mode):
+  global screenMode;
+  screenMode = mode
+def get_screenMode():
+  global screenMode
+  return screenMode
+
+def erase_buttons_for_mode(mode):
+  rects_to_draw = []
+  for i,b in enumerate(buttons[mode]):
+    screen.fill(0, b.rect)
+    rects_to_draw.append(b.rect)
+  pygame.display.update(rects_to_draw)
+
+def draw_buttons_for_mode(mode):
+  rects_to_draw = []
+  for i,b in enumerate(buttons[mode]):
+    print "Draw"
+    b.draw(screen)
+    rects_to_draw.append(b.rect)
+  pygame.display.update(rects_to_draw)
+
+def deal_with_screen_mode_and_buttons(n):
+  erase_buttons_for_mode(get_screenMode())
+  draw_buttons_for_mode(n)
+  label_rect = labels["STATUS"].draw(screen, status_text[n])
+  pygame.display.update(label_rect)
+  set_screenMode(n)
+
+# Lifecycle Methods ------------------
+def start_track(n):
+  # init gps
+  # Start Event Listener
+  # Create Hash For this Track
+  # Change Button
+  deal_with_screen_mode_and_buttons(n)
+
+def pause_track(n):
+  # Stop GPS (preserver battery)
+  # Kill Event Listener
+  # 
+  deal_with_screen_mode_and_buttons(n)
+
+def finish_track(n):
+  # Stop GPS
+  # Close Track (set bool value on last db record)
+  # Cleanup Graph/Display
+  deal_with_screen_mode_and_buttons(n)
+
+def resume_last_track(n):
+  # Start GPS
+  # Start Event Listener
+  # Get most recent, unfinished track
+  # Go
+  deal_with_screen_mode_and_buttons(n)
+
+START = Button((225, 35, 85, 32), bg='start', cb=start_track, value=1)
+PAUSE = Button((225, 35, 85, 32), bg='pause', cb=pause_track, value=2)
+FINISH = Button((225, 74, 85, 32), bg='finish', cb=finish_track, value=0)
+RESUME = Button((225, 74, 85, 32), bg='resume', cb=resume_last_track, value=1)
 
 buttons = [
     # Screen mode 0 is main view screen of current status
     [
-        Button((  5,180,120, 60), bg='start', cb=None, value=1),
-        Button((130,180, 60, 60), bg='cog',   cb=None, value=0),
-        Button((195,180,120, 60), bg='stop',  cb=None, value=0)
+      START, # Initial Mode. Start Button
     ],
+    [
+      PAUSE, # Running Mode. Pause/Finish Buttons
+      FINISH,
+    ],
+    [
+      START, # Running but Paused Mode. Start/Finish Buttons
+      FINISH, 
+    ],
+    [
+      START, # Usually starting from powerdown and if a track has not been closed.
+      RESUME
+    ]
+]
+
+status_text = [
+  "",
+  "Running",
+  "Paused",
 ]
 
 labels = {
   "SPEED": Label((10,20), font_size=36, color=(255,255,255)),
-  "TIME": Label((160,2), font_size=16, color=(255,255,255))
+  "TIME": Label((160,2), font_size=16, color=(255,255,255)),
+  "STATUS": Label((225,17), font_size=12, color=(255,255,255)),
 }
 
 # Signal Handler
@@ -172,11 +255,22 @@ print "Setting Mouse invisible..."
 # pygame.mouse.set_visible(False)
 print "Setting fullscreen..."
 try:
-    modes = pygame.display.list_modes(16)
-    screen = pygame.display.set_mode(modes[0], FULLSCREEN, 16)
+  modes = pygame.display.list_modes(16)
+  screen = pygame.display.set_mode(modes[0], FULLSCREEN, 16)
 except Exception, e:
-    print e
-    screen = pygame.display.set_mode((320, 240), pygame.NOFRAME)
+  print e
+  screen = pygame.display.set_mode((320, 240), pygame.NOFRAME)
+
+# Setup the DB
+import sqlite3
+conn = sqlite3.connect('db/pidb.db')
+print conn
+c = conn.cursor()
+try:
+  c.execute('SELECT * FROM gps ORDER BY price')
+except Exception, e:
+  c.execute('''CREATE TABLE IF NOT EXISTS gps
+             (pk integer primary key, hash text, gps_date datetime, latitude real, longitude real, speed real, elevation real, complete_track integer)''')
 
 screen.fill(0)
 pygame.display.update()
@@ -193,13 +287,37 @@ pygame.time.set_timer(USEREVENT+1, 1000)
 # Graph Updater (Will eventually just update when GPS is updated)
 pygame.time.set_timer(USEREVENT+2, 15000)
 
+# Init Screen Mode
+set_screenMode(0)
+
 # Main Loop ---------------------------
 print "mainloop.."
 
 while(True):
+    # Once setup with screen modes, only do certain drawing methods when the screen mode changes.
     labels["SPEED"].draw(screen, "0 mph")
     labels["TIME"].draw(screen, time.strftime("%I:%M"), center=True)
     pygame.display.update()
+
+    # Button Setup
+    print "Loading Icons..."
+    # Load all icons at startup.
+    for file in os.listdir(iconPath):
+      if fnmatch.fnmatch(file, '*.png'):
+        icons.append(Icon(file.split('.')[0]))
+    # Assign Icons to Buttons, now that they're loaded
+    print"Assigning Buttons"
+    for s in buttons:        # For each screenful of buttons...
+      for b in s:            #  For each button on screen...
+        for i in icons:      #   For each icon...
+          if b.bg == i.name: #    Compare names; match?
+            b.iconBg = i     #     Assign Icon to Button
+            b.bg     = None  #     Name no longer used; allow garbage collection
+          if b.fg == i.name:
+            b.iconFg = i
+            b.fg     = None
+
+    draw_buttons_for_mode(get_screenMode())
 
     should_listen = True
     print "Done with Inital Draw"
@@ -210,10 +328,8 @@ while(True):
                 pos = pygame.mouse.get_pos()
                 print pos
                 plot_points.append(pos[0])
-                labels["SPEED"].draw(screen, str(pos[0])+" mph")
-                pygame.display.update();
-                # for b in buttons[screenMode]:
-                #       if b.selected(pos): break
+                for b in buttons[get_screenMode()]:
+                      if b.selected(pos): break
               if event.type == USEREVENT+1:
                 labels["TIME"].draw(screen, time.strftime("%I:%M"), center=True)
                 pygame.display.update()
@@ -236,6 +352,3 @@ while(True):
                 screen.fill(0, ((0,120), (120,320)))
                 screen.blit(the_graph, ((0,120), (120,320)))
                 pygame.display.flip()
-      
-
-screenModePrior = screenMode

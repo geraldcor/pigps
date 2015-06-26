@@ -16,7 +16,10 @@ matplotlib.use("Agg")
 import matplotlib.backends.backend_agg as agg
 import pylab
 
-import GpsController
+try:
+  import GpsController
+except:
+  pass
  
 # GRAPH Setup
 subplotpars=matplotlib.figure.SubplotParams(left=0.02, right=1.08, bottom=0.1, top=1.0, wspace=0.0, hspace=0.0)
@@ -302,75 +305,80 @@ set_screenMode(0)
 
 # Main Loop ---------------------------
 print "mainloop.."
-gpsc = GpsController.GpsController()
-gpsc.start()
+# gpsc = GpsController.GpsController()
+# gpsc.start()
 pygame.time.set_timer(USEREVENT+3, 15000)
 
 while(program_running):
-    # Once setup with screen modes, only do certain drawing methods when the screen mode changes.
-    labels["SPEED"].draw(screen, "0 mph")
-    labels["TIME"].draw(screen, time.strftime("%I:%M"), center=True)
-    pygame.display.update()
+  # Once setup with screen modes, only do certain drawing methods when the screen mode changes.
+  labels["SPEED"].draw(screen, "0 mph")
+  labels["TIME"].draw(screen, time.strftime("%I:%M"), center=True)
+  pygame.display.update()
 
-    # Button Setup
-    print "Loading Icons..."
-    # Load all icons at startup.
-    for file in os.listdir(iconPath):
-      if fnmatch.fnmatch(file, '*.png'):
-        icons.append(Icon(file.split('.')[0]))
-    # Assign Icons to Buttons, now that they're loaded
-    print"Assigning Buttons"
-    for s in buttons:        # For each screenful of buttons...
-      for b in s:            #  For each button on screen...
-        for i in icons:      #   For each icon...
-          if b.bg == i.name: #    Compare names; match?
-            b.iconBg = i     #     Assign Icon to Button
-            b.bg     = None  #     Name no longer used; allow garbage collection
-          if b.fg == i.name:
-            b.iconFg = i
-            b.fg     = None
+  # Button Setup
+  print "Loading Icons..."
+  # Load all icons at startup.
+  for file in os.listdir(iconPath):
+    if fnmatch.fnmatch(file, '*.png'):
+      icons.append(Icon(file.split('.')[0]))
+  # Assign Icons to Buttons, now that they're loaded
+  print"Assigning Buttons"
+  for s in buttons:        # For each screenful of buttons...
+    for b in s:            #  For each button on screen...
+      for i in icons:      #   For each icon...
+        if b.bg == i.name: #    Compare names; match?
+          b.iconBg = i     #     Assign Icon to Button
+          b.bg     = None  #     Name no longer used; allow garbage collection
+        if b.fg == i.name:
+          b.iconFg = i
+          b.fg     = None
 
-    draw_buttons_for_mode(get_screenMode())
+  draw_buttons_for_mode(get_screenMode())
 
-    should_listen = True
-    print "Done with Inital Draw"
-    # Process touchscreen input
-    while should_listen:
-        for event in pygame.event.get():
-              if(event.type is MOUSEBUTTONDOWN):
-                pos = pygame.mouse.get_pos()
-                print pos
-                plot_points.append(pos[0])
-                for b in buttons[get_screenMode()]:
-                      if b.selected(pos): break
-              if event.type == KEYDOWN:
-                if event.key == K_ESCAPE:
-                  program_running = False
-                  should_listen = False
-                  pygame.quit()
-              if event.type == USEREVENT+1:
-                labels["TIME"].draw(screen, time.strftime("%I:%M"), center=True)
-                pygame.display.update()
-              if event.type == USEREVENT+2:
-                ax = fig.gca()
-                # We can use this to update the plot "width" until we have enough values for the full width to be taken up.
-                # Update the current values. If any kwarg is None, default to the current value, if set, otherwise to rc
-                # OR similar, this crashes (http://matplotlib.org/api/figure_api.html#matplotlib.figure.SubplotParams)
-                # subplotpars.update(left=0.5)
+  should_listen = True
+  print "Done with Inital Draw"
+  # Process touchscreen input
+  while should_listen:
+      for event in pygame.event.get():
+        if(event.type is MOUSEBUTTONDOWN):
+          pos = pygame.mouse.get_pos()
+          print pos
+          plot_points.append(pos[0])
+          for b in buttons[get_screenMode()]:
+                if b.selected(pos): break
+        if event.type == pygame.KEYDOWN:
+          if event.key == pygame.K_ESCAPE:
+            program_running = False
+            should_listen = False
+            break
+            pygame.quit()
+        if event.type == pygame.QUIT:
+            program_running = False
+            should_listen = False
+            break
+        if event.type == USEREVENT+1:
+          labels["TIME"].draw(screen, time.strftime("%I:%M"), center=True)
+          pygame.display.update()
+        if event.type == USEREVENT+2:
+          ax = fig.gca()
+          # We can use this to update the plot "width" until we have enough values for the full width to be taken up.
+          # Update the current values. If any kwarg is None, default to the current value, if set, otherwise to rc
+          # OR similar, this crashes (http://matplotlib.org/api/figure_api.html#matplotlib.figure.SubplotParams)
+          # subplotpars.update(left=0.5)
 
-                ax.plot(plot_points, "-r", antialiased=True)
-                ax.axis('off')
+          ax.plot(plot_points, "-r", antialiased=True)
+          ax.axis('off')
 
-                canvas = agg.FigureCanvasAgg(fig)
-                canvas.draw()
-                renderer = canvas.get_renderer()
-                raw_data = renderer.tostring_rgb()
-                size = canvas.get_width_height()
-                the_graph = pygame.image.fromstring(raw_data, size, "RGB")
-                screen.fill(0, ((0,120), (120,320)))
-                screen.blit(the_graph, ((0,120), (120,320)))
-                pygame.display.flip()
-              if event.type == USEREVENT+3:
-                speed = gpsc.fix.speed
-                print speed
-                labels["SPEED"].draw(screen, str(speed) + " mph")
+          canvas = agg.FigureCanvasAgg(fig)
+          canvas.draw()
+          renderer = canvas.get_renderer()
+          raw_data = renderer.tostring_rgb()
+          size = canvas.get_width_height()
+          the_graph = pygame.image.fromstring(raw_data, size, "RGB")
+          screen.fill(0, ((0,120), (120,320)))
+          screen.blit(the_graph, ((0,120), (120,320)))
+          pygame.display.flip()
+        if event.type == USEREVENT+3:
+          speed = gpsc.fix.speed
+          print speed
+          labels["SPEED"].draw(screen, str(speed) + " mph")

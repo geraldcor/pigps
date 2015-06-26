@@ -15,6 +15,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.backends.backend_agg as agg
 import pylab
+
+import GpsController
  
 # GRAPH Setup
 subplotpars=matplotlib.figure.SubplotParams(left=0.02, right=1.08, bottom=0.1, top=1.0, wspace=0.0, hspace=0.0)
@@ -145,6 +147,7 @@ class Button:
 
 # Globals ---------------------------
 should_listen = False
+program_running = True
 global screenMode
 iconPath = 'img'
 icons = []
@@ -186,6 +189,9 @@ def start_track(n):
   # Start Event Listener
   # Create Hash For this Track
   # Change Button
+  gpsc = GpsController.GpsController()
+  gpsc.start()
+  pygame.time.set_timer(USEREVENT+3, 15000)
   deal_with_screen_mode_and_buttons(n)
 
 def pause_track(n):
@@ -251,16 +257,20 @@ def signal_handler(signal, frame):
 
 print "Initing Pygame"
 pygame.init()
-print "Setting Mouse invisible..."
-# pygame.mouse.set_visible(False)
 print "Setting fullscreen..."
 try:
   modes = pygame.display.list_modes(16)
   screen = pygame.display.set_mode(modes[0], FULLSCREEN, 16)
+  # Tell the RPi to use the TFT screen and that it's a touchscreen device
+  os.putenv('SDL_VIDEODRIVER', 'fbcon')
+  os.putenv('SDL_FBDEV'      , '/dev/fb1')
+  os.putenv('SDL_MOUSEDRV'   , 'TSLIB')
+  os.putenv('SDL_MOUSEDEV'   , '/dev/input/touchscreen')
 except Exception, e:
   print e
   screen = pygame.display.set_mode((320, 240), pygame.NOFRAME)
-
+print "Setting Mouse invisible..."
+pygame.mouse.set_visible(False)
 # Setup the DB
 import sqlite3
 conn = sqlite3.connect('db/pidb.db')
@@ -292,8 +302,11 @@ set_screenMode(0)
 
 # Main Loop ---------------------------
 print "mainloop.."
+gpsc = GpsController.GpsController()
+gpsc.start()
+pygame.time.set_timer(USEREVENT+3, 15000)
 
-while(True):
+while(program_running):
     # Once setup with screen modes, only do certain drawing methods when the screen mode changes.
     labels["SPEED"].draw(screen, "0 mph")
     labels["TIME"].draw(screen, time.strftime("%I:%M"), center=True)
@@ -330,6 +343,11 @@ while(True):
                 plot_points.append(pos[0])
                 for b in buttons[get_screenMode()]:
                       if b.selected(pos): break
+              if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
+                  program_running = False
+                  should_listen = False
+                  pygame.quit()
               if event.type == USEREVENT+1:
                 labels["TIME"].draw(screen, time.strftime("%I:%M"), center=True)
                 pygame.display.update()
@@ -352,3 +370,7 @@ while(True):
                 screen.fill(0, ((0,120), (120,320)))
                 screen.blit(the_graph, ((0,120), (120,320)))
                 pygame.display.flip()
+              if event.type == USEREVENT+3:
+                speed = gpsc.fix.speed
+                print speed
+                labels["SPEED"].draw(screen, str(speed) + " mph")

@@ -321,7 +321,7 @@ set_screenMode(0)
 # Main Loop ---------------------------
 print "mainloop.."
 gpsc = GpsController.GpsController()
-gpsc.run()
+gpsc.start()
 
 while(program_running):
   # Once setup with screen modes, only do certain drawing methods when the screen mode changes.

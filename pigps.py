@@ -208,6 +208,7 @@ def finish_track(n):
   # Close Track (set bool value on last db record)
   # Cleanup Graph/Display
   gpsc.stopController()
+  gpsc.join()
   pygame.time.set_timer(USEREVENT+3, 0)
   deal_with_screen_mode_and_buttons(n)
 

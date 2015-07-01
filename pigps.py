@@ -155,10 +155,10 @@ global screenMode
 iconPath = 'img'
 icons = []
 plot_points = []
-track_hash = '';
+track_hash = ''
 
 def set_screenMode(mode):
-  global screenMode;
+  global screenMode
   screenMode = mode
 def get_screenMode():
   global screenMode
@@ -321,7 +321,7 @@ set_screenMode(0)
 # Main Loop ---------------------------
 print "mainloop.."
 gpsc = GpsController.GpsController()
-gpsc.start()
+gpsc.run()
 
 while(program_running):
   # Once setup with screen modes, only do certain drawing methods when the screen mode changes.

@@ -192,7 +192,7 @@ def start_track(n):
   # Start Event Listener
   # Create Hash For this Track
   # Change Button
-  gpsc.run()
+  gpsc.start()
   pygame.time.set_timer(USEREVENT+3, 15000)
   deal_with_screen_mode_and_buttons(n)
 
@@ -208,6 +208,7 @@ def finish_track(n):
   # Close Track (set bool value on last db record)
   # Cleanup Graph/Display
   gpsc.stopController()
+  gpsc.join()
   pygame.time.set_timer(USEREVENT+3, 0)
   deal_with_screen_mode_and_buttons(n)
 

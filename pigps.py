@@ -182,7 +182,7 @@ def draw_buttons_for_mode(mode):
 def deal_with_screen_mode_and_buttons(n):
   erase_buttons_for_mode(get_screenMode())
   draw_buttons_for_mode(n)
-  label_rect = labels["STATUS"].draw(screen, status_text[n] + " " + str(get_screenMode()))
+  label_rect = labels["STATUS"].draw(screen, status_text[n] + " " + str(n))
   pygame.display.update(label_rect)
   set_screenMode(n)
 
@@ -192,7 +192,7 @@ def start_track(n):
   # Start Event Listener
   # Create Hash For this Track
   # Change Button
-  gpsc.start()
+  gpsc.run()
   pygame.time.set_timer(USEREVENT+3, 15000)
   deal_with_screen_mode_and_buttons(n)
 
@@ -200,12 +200,15 @@ def pause_track(n):
   # Stop GPS (preserver battery)
   # Kill Event Listener
   # 
+  pygame.time.set_timer(USEREVENT+3, 0)
   deal_with_screen_mode_and_buttons(n)
 
 def finish_track(n):
   # Stop GPS
   # Close Track (set bool value on last db record)
   # Cleanup Graph/Display
+  gpsc.stopController()
+  pygame.time.set_timer(USEREVENT+3, 0)
   deal_with_screen_mode_and_buttons(n)
 
 def resume_last_track(n):
@@ -213,6 +216,7 @@ def resume_last_track(n):
   # Start Event Listener
   # Get most recent, unfinished track
   # Go
+  pygame.time.set_timer(USEREVENT+3, 15000)
   deal_with_screen_mode_and_buttons(n)
 
 START = Button((225, 35, 85, 32), bg='start', cb=start_track, value=1)
@@ -240,7 +244,7 @@ buttons = [
 ]
 
 status_text = [
-  "",
+  "Waiting",
   "Running",
   "Paused",
 ]
@@ -316,8 +320,6 @@ set_screenMode(0)
 # Main Loop ---------------------------
 print "mainloop.."
 gpsc = GpsController.GpsController()
-# gpsc.start()
-pygame.time.set_timer(USEREVENT+3, 15000)
 
 while(program_running):
   # Once setup with screen modes, only do certain drawing methods when the screen mode changes.

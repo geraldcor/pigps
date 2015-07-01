@@ -192,7 +192,7 @@ def start_track(n):
   # Start Event Listener
   # Create Hash For this Track
   # Change Button
-  gpsc.run()
+  gpsc.start()
   pygame.time.set_timer(USEREVENT+3, 15000)
   deal_with_screen_mode_and_buttons(n)
 
@@ -320,6 +320,7 @@ set_screenMode(0)
 # Main Loop ---------------------------
 print "mainloop.."
 gpsc = GpsController.GpsController()
+gpsc.start()
 
 while(program_running):
   # Once setup with screen modes, only do certain drawing methods when the screen mode changes.

@@ -182,7 +182,7 @@ def draw_buttons_for_mode(mode):
 def deal_with_screen_mode_and_buttons(n):
   erase_buttons_for_mode(get_screenMode())
   draw_buttons_for_mode(n)
-  label_rect = labels["STATUS"].draw(screen, status_text[n])
+  label_rect = labels["STATUS"].draw(screen, status_text[n] + " " + str(get_screenMode()))
   pygame.display.update(label_rect)
   set_screenMode(n)
 

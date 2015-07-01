@@ -192,7 +192,6 @@ def start_track(n):
   # Start Event Listener
   # Create Hash For this Track
   # Change Button
-  gpsc = GpsController.GpsController()
   gpsc.start()
   pygame.time.set_timer(USEREVENT+3, 15000)
   deal_with_screen_mode_and_buttons(n)
@@ -258,20 +257,31 @@ def signal_handler(signal, frame):
     pygame.quit()
     sys.exit()
 
-print "Initing Pygame"
-pygame.init()
 print "Setting fullscreen..."
 try:
+  #modes = pygame.display.list_modes(16)
+  #screen = pygame.display.set_mode(modes[0], FULLSCREEN, 16)
+  # Tell the RPi to use the TFT screen and that it's a touchscreen device
+  #os.putenv('SDL_VIDEODRIVER', 'fbcon')
+  #os.putenv('SDL_FBDEV'      , '/dev/fb1')
+  #os.putenv('SDL_MOUSEDRV'   , 'TSLIB')
+  #os.putenv('SDL_MOUSEDEV'   , '/dev/input/touchscreen')
+  os.putenv('SDL_FBDEV', '/dev/fb1')
+  os.putenv('SDL_MOUSEDRV', 'TSLIB')
+  os.putenv('SDL_MOUSEDEV', '/dev/input/touchscreen')
+  print "Initing Pygame Proper"
+  pygame.init()
+  #screen = pygame.display.set_mode((320, 240), pygame.NOFRAME)
   modes = pygame.display.list_modes(16)
   screen = pygame.display.set_mode(modes[0], FULLSCREEN, 16)
-  # Tell the RPi to use the TFT screen and that it's a touchscreen device
-  os.putenv('SDL_VIDEODRIVER', 'fbcon')
-  os.putenv('SDL_FBDEV'      , '/dev/fb1')
-  os.putenv('SDL_MOUSEDRV'   , 'TSLIB')
-  os.putenv('SDL_MOUSEDEV'   , '/dev/input/touchscreen')
+  print "TRY WORKED"
 except Exception, e:
   print e
+  print "Initing Pygame"
+  pygame.init()
   screen = pygame.display.set_mode((320, 240), pygame.NOFRAME)
+  print "TRY DIDNOT WORK"
+
 print "Setting Mouse invisible..."
 pygame.mouse.set_visible(False)
 # Setup the DB
@@ -305,7 +315,7 @@ set_screenMode(0)
 
 # Main Loop ---------------------------
 print "mainloop.."
-# gpsc = GpsController.GpsController()
+gpsc = GpsController.GpsController()
 # gpsc.start()
 pygame.time.set_timer(USEREVENT+3, 15000)
 
